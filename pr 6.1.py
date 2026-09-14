@@ -1,0 +1,51 @@
+import cv2
+import numpy as np
+# -------------------------------
+# PART 1: Generate mask & restore using TELEA
+# -------------------------------
+# Step 1: Read the damaged image
+damaged_img = cv2.imread("cat_damaged.png")
+
+# Step 2: Create mask from damaged image
+height, width = damaged_img.shape[0], damaged_img.shape[1]
+
+mask = np.zeros((height, width, 3), dtype=np.uint8)
+for i in range(height):
+    for j in range(width):
+        if damaged_img[i, j].sum() > 0:   # non-black pixel
+            mask[i, j] = [0, 0, 0]
+        else:  # damaged black pixel → white in mask
+            mask[i, j] = [255, 255, 255]
+# Convert mask to grayscale
+mask_gray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+# Save mask
+cv2.imwrite("generated_mask.jpg", mask_gray)
+
+# Step 3: Perform inpainting (TELEA method)
+restored_telea = cv2.inpaint(damaged_img, mask_gray, 3, cv2.INPAINT_TELEA)
+# PART 2: Use predefined mask & restore using NS
+# -------------------------------
+# Step 4: Read damaged image again
+img = cv2.imread("cat_damaged.png")
+
+# Step 5: Load predefined mask (must be a binary image)
+mask_predefined = cv2.imread("cat_mask.png", 0)
+
+# Step 6: Inpaint with Navier-Stokes method
+restored_ns = cv2.inpaint(img, mask_predefined, 3, cv2.INPAINT_NS)
+# Save results
+cv2.imwrite("restored_telea.png", restored_telea)
+cv2.imwrite("restored_ns.png", restored_ns)
+
+# -------------------------------
+# Display Results
+# -------------------------------
+cv2.imshow("Original Damaged Image CS24073", damaged_img)
+cv2.imshow("Generated Mask CS24073", mask_gray)
+cv2.imshow("Restored (Telea) CS24073", restored_telea)
+cv2.imshow("Predefined Mask CS24073", mask_predefined)
+cv2.imshow("Restored (Navier-Stokes) CS24073", restored_ns)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
